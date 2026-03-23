@@ -117,8 +117,9 @@ function JoinScreen({ boardId, onJoined }) {
       }
 
       localStorage.setItem("acc_board_id", boardId);
-      localStorage.setItem("acc_member_id", memberId);
-      onJoined(boardId, memberId);
+localStorage.setItem("acc_member_id", memberId);
+// Force redirect to clear the ?board= param and load the board
+window.location.href = window.location.origin + window.location.pathname;
     } catch(e) {
       console.error("Join error:", e);
       setError(`Error: ${e.message}`);
