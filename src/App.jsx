@@ -312,22 +312,22 @@ function AIMotivationModal({ board, onClose }) {
           while(true){ const k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; if((checkins[k]||[]).includes(m.id)){s++;d.setDate(d.getDate()-1);}else break; }
           return `${m.name}: ${s} days`;
         }).join(", ");
-        const res = await fetch(
-  `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${import.meta.env.VITE_GEMINI_KEY}`,
-  {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{
-        parts: [{
-          text: `You are an enthusiastic accountability coach. Board: "${board.board_name}", Members: ${members.map(m=>m.name).join(", ")}, Total check-ins: ${totalCheckins}, Today: ${todayCheckins}/${members.length}, Goals completed: ${goals.filter(g=>g.completed).length}/${goals.length}, Streaks: ${streakInfo}. Return ONLY raw JSON no markdown: {"headline":"short punchy headline max 8 words","message":"2-3 sentence motivational message mentioning names","shoutout":"who deserves shoutout and why","challenge":"one specific challenge for today","quote":"powerful quote with author"}`
-        }]
-      }]
-    })
-  }
-);
+        const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${import.meta.env.VITE_GROQ_KEY}`
+  },
+  body: JSON.stringify({
+    model: "llama-3.1-8b-instant",
+    messages: [{
+      role: "user",
+      content: `You are an enthusiastic accountability coach. Board: "${board.board_name}", Members: ${members.map(m=>m.name).join(", ")}, Total check-ins: ${totalCheckins}, Today: ${todayCheckins}/${members.length}, Goals completed: ${goals.filter(g=>g.completed).length}/${goals.length}, Streaks: ${streakInfo}. Return ONLY raw JSON no markdown no backticks: {"headline":"short punchy headline max 8 words","message":"2-3 sentence motivational message mentioning names","shoutout":"who deserves shoutout and why","challenge":"one specific challenge for today","quote":"powerful quote with author"}`
+    }]
+  })
+});
 const data = await res.json();
-const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+const text = data.choices?.[0]?.message?.content || "";
 setResult(JSON.parse(text.replace(/```json|```/g,"").trim()));
       } catch(e) { setError("Couldn't load AI motivation."); }
       finally { setLoading(false); }
