@@ -91,15 +91,39 @@ function JoinScreen({ boardId, onJoined }) {
   const handleJoin = async () => {
     if (!myName.trim()) return;
     setJoining(true);
+    setError(null);
     try {
       const memberId = `member_${Date.now()}`;
-      const updatedMembers = [...(board.members||[]), { id:memberId, name:myName.trim(), avatar:myAvatar }];
-      const { error } = await supabase.from("boards").update({ members:updatedMembers }).eq("id", boardId);
-      if (error) throw error;
+      const newMember = { id: memberId, name: myName.trim(), avatar: myAvatar };
+      const updatedMembers = [...(board.members || []), newMember];
+
+      const { data, error } = await supabase
+        .from("boards")
+        .update({ members: updatedMembers })
+        .eq("id", boardId)
+        .select();
+
+      if (error) {
+        console.error("Supabase error:", error);
+        setError(`Failed to join: ${error.message}`);
+        setJoining(false);
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        setError("Board update failed. Check Supabase permissions.");
+        setJoining(false);
+        return;
+      }
+
       localStorage.setItem("acc_board_id", boardId);
       localStorage.setItem("acc_member_id", memberId);
       onJoined(boardId, memberId);
-    } catch(e) { setError("Failed to join. Try again."); setJoining(false); }
+    } catch(e) {
+      console.error("Join error:", e);
+      setError(`Error: ${e.message}`);
+      setJoining(false);
+    }
   };
 
   if (loading) return <LoadingScreen text="Loading board..." />;
